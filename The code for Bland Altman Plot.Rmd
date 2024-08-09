@@ -89,3 +89,190 @@ print(wilcoxon_test_results)
 # Count points above and below the limits
 cat("Number of points above upper limit:", points_above_upper, "\n")
 cat("Number of points below lower limit:", points_below_lower, "\n")
+
+
+
+
+
+#### bland Altman plot of the observed ratios across all TE = 35, 78, and 97ms for PRERSS and STEAM
+
+
+
+##### for PRESS
+
+library(dplyr)
+library(ggplot2)
+
+# Sample data 
+data <- data.frame(
+  Metabolite = rep(c("2HG", "Cysta", "NAAG", "NAA", "Gln", "Glu", "Lac", "Gly", "Cho", "Cr", "ml"), 15),
+  Condition = rep(c("PRESS_0mM_35", "PRESS_1mM_35", "PRESS_2mM_35", "PRESS_4mM_35", "PRESS_8mM_35",
+                    "PRESS_0mM_78", "PRESS_1mM_78", "PRESS_2mM_78", "PRESS_4mM_78", "PRESS_8mM_78",
+                    "PRESS_0mM_97", "PRESS_1mM_97", "PRESS_2mM_97", "PRESS_4mM_97", "PRESS_8mM_97"), each = 11),
+  True_Ratio = c(0, 0, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.1, 0.05, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.2, 0.1, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.4, 0.2, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.8, 0.4, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0, 0, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.1, 0.05, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.2, 0.1, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.4, 0.2, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.8, 0.4, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0, 0, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.1, 0.05, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.2, 0.1, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.4, 0.2, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.8, 0.4, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75), 
+  Observed_Ratio = c(0.525, 0.903, 0.253, 0.903, 0.336, 1.185, 0.417, 0.0015, 0.275, 1, 1.266,
+                     1.836, 0.158, 0.254, 1.017, 0.384, 1.474, 0.668, 0.012, 0.255, 1, 1.022,
+                     0, 0.155, 0.219, 0.967, 0.324, 1.135, 0.498, 0, 0.253, 1, 1.152,
+                     0.963, 0.172, 0.197, 0.797, 0.285, 0.757, 0.328, 0.0, 0.249, 1, 1.097,
+                     0.603, 0.43, 0.244, 1.163, 0.295, 1.384, 0.696, 0.163, 0.248, 1, 0.964,
+                     0, 0.065, 0.125, 0.894, 0, 0.241, 0.235, 0.212, 0.298, 1, 0.616,
+                     0.099, 0.027, 0.093, 1.175, 0, 0.358, 0.246, 0.191, 0.281, 1, 0.643,
+                     0.077, 0.082, 0.141, 0.962, 0, 0.277, 0.253, 0.153, 0.282, 1, 0.564,
+                     0, 0.122, 0.131, 0.906, 0, 0.253, 0.253, 0.193, 0.291, 1, 0.627,
+                     0.259, 0.082, 0.104, 1.136, 0, 0.313, 0.235, 0.146, 0.257, 1, 0.512,
+                     0.052, 0.158, 0.165, 0.897, 0, 0.305, 0.246, 0.126, 0.305, 1, 0.594,
+                     0.011, 0.087, 0.056, 0.832, 0, 0.278, 0.201, 0.132, 0.277, 1, 0.578,
+                     0.037, 0.093, 0.141, 0.834, 0, 0.273, 0.241, 0.091, 0.29, 1, 0.592,
+                     0.136, 0.188, 0.153, 0.907, 0, 0.335, 0.272, 0.128, 0.297, 1, 0.589,
+                     0.205, 0.138, 0.092, 0.911, 0, 0.275, 0.218, 0.102, 0.284, 1, 0.547)
+)
+
+# Calculate the mean and difference between true and observed ratios
+data <- data %>%
+  mutate(Mean = (Observed_Ratio + True_Ratio) / 2,
+         Difference = Observed_Ratio - True_Ratio)
+
+# Calculate the mean difference and the limits of agreement
+mean_diff <- mean(data$Difference)
+sd_diff <- sd(data$Difference)
+upper_limit <- mean_diff + 1.96 * sd_diff
+lower_limit <- mean_diff - 1.96 * sd_diff
+
+# Create the Bland-Altman plot
+plot <- ggplot(data, aes(x = Mean, y = Difference)) +
+  geom_point(color = "black", size = 3.5) +
+  geom_hline(yintercept = mean_diff, color = "blue", linetype = "dashed", size = 2) +
+  geom_hline(yintercept = upper_limit, color = "red", linetype = "dashed", size = 1.2) +
+  geom_hline(yintercept = lower_limit, color = "red", linetype = "dashed", size = 1.2) +
+  labs(title = "Bland-Altman Plot of the Observed Ratio vs True Ratio of PRESS Sequence",
+       x = "Mean",
+       y = "Difference") +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 16),
+    plot.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "darkgray", fill = NA, size = 1)
+  ) +
+  annotate("text", x = Inf, y = mean_diff, label = paste("Mean:", round(mean_diff, 2)), vjust = -1, hjust = 1.1, size = 6, color = "red") +
+  annotate("text", x = Inf, y = upper_limit, label = paste("Upper Limit:", round(upper_limit, 2)), vjust = -1, hjust = 1.1, size = 6, color = "black") +
+  annotate("text", x = Inf, y = lower_limit, label = paste("Lower Limit:", round(lower_limit, 2)), vjust = 1.1, hjust = 1.1, size = 6, color = "black")
+
+# Print the plot to display it
+print(plot)
+
+# Perform a paired t-test
+t_test_result <- t.test(data$Observed_Ratio, data$True_Ratio, paired = TRUE)
+
+# Print the results
+print(t_test_result)
+
+
+
+
+
+# bland Altman plot for STEAM 
+
+
+
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# Sample data
+data <- data.frame(
+  Metabolite = rep(c("2HG", "Cysta", "NAAG", "NAA", "Gln", "Glu", "Lac", "Gly", "Cho", "Cr", "ml"), 15),
+  Condition = rep(c("PRESS_0mM_35", "PRESS_1mM_35", "PRESS_2mM_35", "PRESS_4mM_35", "PRESS_8mM_35",
+                    "PRESS_0mM_78", "PRESS_1mM_78", "PRESS_2mM_78", "PRESS_4mM_78", "PRESS_8mM_78",
+                    "PRESS_0mM_97", "PRESS_1mM_97", "PRESS_2mM_97", "PRESS_4mM_97", "PRESS_8mM_97"), each = 11),
+  True_Ratio = c(0, 0, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.1, 0.05, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.2, 0.1, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.4, 0.2, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.8, 0.4, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0, 0.0, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.1, 0.05, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.2, 0.1, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.4, 0.2, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.8, 0.4, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0, 0, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.1, 0.05, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.2, 0.1, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.4, 0.2, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75, 
+                 0.8, 0.4, 0.16, 0.125, 0.5, 0.125, 0.5, 0.1, 0.3, 0.1, 0.75),
+  Observed_Ratio = c(0.509, 0.391, 0.217, 1.042, 0.56, 1.385, 0.305, 0.197, 0.278, 1, 1.347,
+                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                     0.521, 0.35, 0.218, 1.036, 0.552, 1.31, 0.317, 0.164, 0.273, 1, 1.306,
+                     0.775, 0.51, 0.214, 1.027, 0.492, 1.338, 0.31, 0.181, 0.27, 1, 1.249,
+                     1.01, 0.681, 0.276, 1.075, 0.538, 1.271, 0.321, 0.213, 0.267, 1, 1.215,
+                     2.068, 0, 0.196, 0.985, 0.012, 0, 0.154, 0, 0.291, 1, 1.17,
+                     2.197, 0, 0.216, 1.055, 0.254, 0.26, 0.268, 0, 0.282, 1, 1.06,
+                     2.496, 0.956, 0.099, 0.924, 0.082, 0.024, 0.156, 0, 0.256, 1, 0.978,
+                     2.08, 0, 0.197, 0.98, 0.147, 0.065, 0.178, 0, 0.284, 1, 1.092,
+                     2.928, 1.164, 0.14, 0.978, 0.08, 0, 0.149, 0, 0.252, 1, 0.914,
+                     0.571, 0.582, 0.194, 0.924, 0, 0.265, 0.066, 0, 0.286, 1, 0.993,
+                     0, 0, 0.211, 1.044, 0, 0.541, 0.231, 0, 0.27, 1, 0.973,
+                     3.061, 0.46, 0.31, 0.974, 0.01, 0.949, 0.068, 0.04, 0.287, 1, 0.793,
+                     2.659, 0.655, 0.261, 0.948, 0.05, 0.73, 0.099, 0.059, 0.279, 1, 0.773,
+                     3.234, 0.517, 0.323, 1.021, 0, 1.215, 0.103, 0.057, 0.28, 1, 0.755)
+)
+
+# Calculate the mean and difference between true and observed ratios
+data <- data %>%
+  mutate(Mean = (Observed_Ratio + True_Ratio) / 2,
+         Difference = Observed_Ratio - True_Ratio)
+
+# Calculate the mean difference and the limits of agreement
+mean_diff <- mean(data$Difference)
+sd_diff <- sd(data$Difference)
+upper_limit <- mean_diff + 1.96 * sd_diff
+lower_limit <- mean_diff - 1.96 * sd_diff
+
+# Create the Bland-Altman plot
+plot <- ggplot(data, aes(x = Mean, y = Difference)) +
+  geom_point(color = "black", size = 3.5) +
+  geom_hline(yintercept = mean_diff, color = "blue", linetype = "dashed", size = 2) +
+  geom_hline(yintercept = upper_limit, color = "red", linetype = "dashed", size = 1.2) +
+  geom_hline(yintercept = lower_limit, color = "red", linetype = "dashed", size = 1.2) +
+  labs(title = "Bland-Altman Plot of the Observed Ratio vs True Ratio of STEAM Sequence",
+       x = "Mean",
+       y = "Difference") +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 16),
+    plot.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "darkgray", fill = NA, size = 1)
+  ) +
+  annotate("text", x = Inf, y = mean_diff, label = paste("Mean:", round(mean_diff, 2)), vjust = -1, hjust = 1.1, size = 6, color = "red") +
+  annotate("text", x = Inf, y = upper_limit, label = paste("Upper Limit:", round(upper_limit, 2)), vjust = -1, hjust = 1.1, size = 6, color = "black") +
+  annotate("text", x = Inf, y = lower_limit, label = paste("Lower Limit:", round(lower_limit, 2)), vjust = 1.1, hjust = 1.1, size = 6, color = "black")
+
+# Print the plot to display it
+print(plot)
+
+
+
+# Check for normality of the differences
+shapiro_test <- shapiro.test(data$Difference)
+print(shapiro_test)
+
+
+t_test <- t.test(data$Observed_Ratio, data$True_Ratio, paired = TRUE)
+print(t_test)
+
+
+
