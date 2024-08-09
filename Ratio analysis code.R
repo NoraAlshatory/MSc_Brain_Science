@@ -65,9 +65,6 @@ perform_t_test <- function(te_label) {
 lapply(unique(data_combined$TE), perform_t_test)
 
 
-
-
-
 # checking for false-positive 
 
 # dataset TE 35ms 
@@ -140,7 +137,7 @@ print(false_positive_percentage)
 
 
 
-# TE = 97ms false +
+# TE = 97ms false-postitive 
 
 # Create the data frame
 data_combined <- data.frame(
@@ -171,5 +168,156 @@ false_positive_percentage <- data_combined %>%
 
 # Print the false positive percentage
 cat("False Positive Percentage:\n")
+print(false_positive_percentage)
+
+
+                
+# STEAM analysis ofspectral fitting using true ratio and observed ratio to Creatine 
+
+
+# STEAM analysis of fitting spectra using true ratio and observed ratio TE = 6ms, 4mM
+library(dplyr)
+library(ggplot2)
+
+# Sample data
+data_steam_6ms <- data.frame(
+  Metabolite = c("2HG", "Cysta", "NAAG", "NAA", "Gln", "Glu", "Lac", "Gly", "Cho", "Cr", "ml"),
+  Actual_Ratio = c(0.4, 0.2, 0.16, 1.25, 0.5, 1.25, 0.5, 0.1, 0.3, 0.10, 0.75),
+  Observed_Ratio = c(0.328, 0.334, 0.182, 1.136, 0.248, 1.043, 0.43, 0.241, 0.259, 1, 0.961)
+)
+
+# Fit the linear regression model
+lm_model_steam_6ms <- lm(Observed_Ratio ~ Actual_Ratio, data = data_steam_6ms)
+summary(lm_model_steam_6ms)
+
+# Extract model details for annotation
+intercept <- round(coef(lm_model_steam_6ms)[1], 4)
+slope <- round(coef(lm_model_steam_6ms)[2], 4)
+r_squared <- round(summary(lm_model_steam_6ms)$r.squared * 100, 2)
+p_value <- round(summary(lm_model_steam_6ms)$coefficients[2, 4], 5)
+
+# Generate the regression plot
+plot_steam_6ms <- ggplot(data_steam_6ms, aes(x = Actual_Ratio, y = Observed_Ratio)) +
+  geom_point(size = 5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", size = 2) +
+  labs(title = "Obsereved vs True Ratio STEAM TE = 6ms (Phantom 2)", x = "True Ratios", y = "Observed Ratios") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.background = element_rect(color = "grey", size = 1),
+        axis.title = element_text(size = 18),
+        axis.text = element_text(size = 18),
+        panel.grid.major = element_line(size = 1.5, linetype = 'solid', colour = "grey80"),
+        panel.grid.minor = element_line(size = 1, linetype = 'solid', colour = "grey90"),
+        panel.border = element_rect(colour = "darkgray", fill = NA, size = 2)) +
+  annotate("text", x = 0.2, y = 1.08, label = paste("y =", intercept, "+", slope, "* x"), size = 4, color = "blue", hjust = -1.3) +
+  annotate("text", x = 0.2, y = 1.03, label = paste("R² =", r_squared, "%"), size = 4, color = "blue", hjust = -2.3) +
+  annotate("text", x = 0.2, y = 0.99, label = paste("p =", p_value), size = 4, color = "blue", hjust = -2.5)
+
+print(plot_steam_6ms)
+
+# Sample data
+true_ratio <- c(0.4, 0.2, 0.16, 1.25, 0.5, 1.25, 0.5, 0.1, 0.3, 0.10, 0.75)
+observed_ratio <- c(0.328, 0.334, 0.182, 1.136, 0.248, 1.043, 0.43, 0.241, 0.259, 1, 0.961)
+
+# Perform paired t-test
+paired_t_test_result <- t.test(true_ratio, observed_ratio, paired = TRUE)
+print(paired_t_test_result)
+
+
+#false-positive 6ms 4mM
+
+
+# Define a threshold for false positives
+threshold <- 0.05
+
+# Calculate the difference between true_ratio and observed_ratio
+difference <- abs(true_ratio - observed_ratio)
+
+# Identify false positives
+false_positive <- ifelse(difference > threshold, 1, 0)
+
+# Calculate the false positive percentage
+false_positive_percentage <- mean(false_positive) * 100
+
+# Print the false positive percentage
+cat("False Positive Percentage for STEAM at TE = 6ms for 4mN:\n")
+print(false_positive_percentage)
+
+
+
+#####################
+
+# STEAM analysis of fitting spectra using true ratio and observed ratio TE = 6ms and con 8mM
+library(dplyr)
+library(ggplot2)
+
+# Sample data
+data_steam_6ms <- data.frame(
+  Metabolite = c("2HG", "Cysta", "NAAG", "NAA", "Gln", "Glu", "Lac", "Gly", "Cho", "Cr", "ml"),
+  Actual_Ratio = c(0.8, 0.4, 0.16, 1.25, 0.5, 1.25, 0.5, 0.1, 0.3, 0.10, 0.75),
+  Observed_Ratio = c(0.777, 0.557, 0.166, 1.175, 0.327, 1.078, 0.451, 0.306, 0.25, 1, 0.897)
+)
+
+# Fit the linear regression model
+lm_model_steam_6ms <- lm(Observed_Ratio ~ Actual_Ratio, data = data_steam_6ms)
+summary(lm_model_steam_6ms)
+
+# Extract model details for annotation
+intercept <- round(coef(lm_model_steam_6ms)[1], 4)
+slope <- round(coef(lm_model_steam_6ms)[2], 4)
+r_squared <- round(summary(lm_model_steam_6ms)$r.squared * 100, 2)
+p_value <- round(summary(lm_model_steam_6ms)$coefficients[2, 4], 5)
+
+# Generate the regression plot
+plot_steam_6ms <- ggplot(data_steam_6ms, aes(x = Actual_Ratio, y = Observed_Ratio)) +
+  geom_point(size = 5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", size = 2) +
+  labs(title = "Obsereved vs True Ratio for STEAM TE = 6ms", x = "True Ratios", y = "Observed Ratios") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 20, face = "bold"),
+    plot.background = element_rect(color = "grey", size = 1),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 18),
+    panel.grid.major = element_line(size = 1.5, linetype = 'solid', colour = "grey80"),
+    panel.grid.minor = element_line(size = 1, linetype = 'solid', colour = "grey90"),
+    panel.border = element_rect(colour = "darkgray", fill = NA, size = 2)
+  ) +
+  annotate("text", x = 0.15, y = 1.1, label = paste("y =", intercept, "+", slope, "* x"), size = 4, color = "blue", hjust = -1.3) +
+  annotate("text", x = 0.15, y = 1.05, label = paste("R² =", r_squared, "%"), size = 4, color = "blue", hjust = -2.8) +
+  annotate("text", x = 0.15, y = 1.00, label = paste("p =", p_value), size = 4, color = "blue", hjust = -3)
+
+print(plot_steam_6ms)
+
+
+#false-positive 6ms 8mM
+
+# Load necessary library
+library(dplyr)
+
+# Define the data
+data_steam_6ms <- data.frame(
+  Metabolite = c("2HG", "Cysta", "NAAG", "NAA", "Gln", "Glu", "Lac", "Gly", "Cho", "Cr", "ml"),
+  Actual_Ratio = c(0.8, 0.4, 0.16, 1.25, 0.5, 1.25, 0.5, 0.1, 0.3, 0.10, 0.75),
+  Observed_Ratio = c(0.777, 0.557, 0.166, 1.175, 0.327, 1.078, 0.451, 0.306, 0.25, 1, 0.897)
+)
+
+# Define a threshold for false positives
+threshold <- 0.05
+
+# Calculate the difference between Actual_Ratio and Observed_Ratio
+data_steam_6ms <- data_steam_6ms %>%
+  mutate(Difference = abs(Actual_Ratio - Observed_Ratio))
+
+# Identify false positives
+data_steam_6ms <- data_steam_6ms %>%
+  mutate(False_Positive = ifelse(Difference > threshold, 1, 0))
+
+# Calculate the false positive percentage
+false_positive_percentage <- data_steam_6ms %>%
+  summarise(False_Positive_Percentage = mean(False_Positive) * 100)
+
+# Print the false positive percentage
+cat("False Positive Percentage for STEAM at TE = 6ms:\n")
 print(false_positive_percentage)
 
