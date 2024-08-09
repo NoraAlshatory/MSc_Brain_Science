@@ -1,0 +1,91 @@
+---
+title: "Altman plot code"
+author: "Nora Alshatory"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load necessary libraries
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# Read the data from the CSV file
+data <- read.csv("Full_Data.csv")
+
+# Inspect the data
+str(data)
+summary(data)
+
+# Check for missing values and handle them if necessary
+sum(is.na(data))
+data <- data %>% drop_na()
+
+# Filter and reshape data for relevant TE values and calculate ratios
+relevant_te_values <- c("35", "78", "97")
+data_ratio <- data %>%
+  select(Metatabolite, contains("PRESS_Ratio"), contains("STEAM_Ratio")) %>%
+  pivot_longer(cols = -Metatabolite, 
+               names_to = c("Sequence", "Concentration", "TE"), 
+               names_pattern = "(.*)_Ratio_(.*)_(.*)") %>%
+  filter(TE %in% relevant_te_values) %>%
+  spread(Sequence, value) %>%
+  mutate(Average = (PRESS + STEAM) / 2,
+         Difference = PRESS - STEAM)
+
+# Calculate mean difference and limits of agreement
+mean_diff <- mean(data_ratio$Difference, na.rm = TRUE)
+sd_diff <- sd(data_ratio$Difference, na.rm = TRUE)
+upper_limit <- mean_diff + 1.96 * sd_diff
+lower_limit <- mean_diff - 1.96 * sd_diff
+
+# Count points above and below the limits
+points_above_upper <- sum(data_ratio$Difference > upper_limit, na.rm = TRUE)
+points_below_lower <- sum(data_ratio$Difference < lower_limit, na.rm = TRUE)
+
+# Bland-Altman (Altman) Plot with Annotations
+altman_plot <- ggplot(data_ratio, aes(x = Average, y = Difference)) +
+  geom_point(color = "black") +
+  geom_hline(yintercept = mean_diff, color = "blue", linetype = "dashed") +
+  geom_hline(yintercept = upper_limit, color = "red", linetype = "dashed") +
+  geom_hline(yintercept = lower_limit, color = "red", linetype = "dashed") +
+  annotate("text", x = max(data_ratio$Average), y = mean_diff, label = paste0("Mean: ", round(mean_diff, 3)), color = "blue", hjust = 1, vjust = -1) +
+  annotate("text", x = max(data_ratio$Average), y = upper_limit, label = paste0("Upper Limit: ", round(upper_limit, 3)), color = "red", hjust = 1, vjust = -1) +
+  annotate("text", x = max(data_ratio$Average), y = lower_limit, label = paste0("Lower Limit: ", round(lower_limit, 3)), color = "red", hjust = 1, vjust = 1.5) +
+  theme_minimal() +
+  labs(title = "Bland-Altman Plot of PRESS vs. STEAM",
+       x = "Average",
+       y = "Difference") +
+  theme(
+    plot.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "gray", fill = NA, size = 1),
+    plot.background = element_rect(color = "gray", fill = NA, size = 1),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 12)
+  ) +
+  guides(color = "none")
+
+print(altman_plot)
+
+
+# Calculate standard deviations for PRESS and STEAM ratios
+sd_press <- sd(data_ratio$PRESS, na.rm = TRUE)
+sd_steam <- sd(data_ratio$STEAM, na.rm = TRUE)
+
+cat("Standard Deviation of PRESS Ratios:", sd_press, "\n")
+cat("Standard Deviation of STEAM Ratios:", sd_steam, "\n")
+
+# Paired T-test
+t_test_results <- t.test(data_ratio$PRESS, data_ratio$STEAM, paired = TRUE)
+print(t_test_results)
+
+# Wilcoxon Signed-Rank Test
+wilcoxon_test_results <- wilcox.test(data_ratio$PRESS, data_ratio$STEAM, paired = TRUE)
+print(wilcoxon_test_results)
+
+# Count points above and below the limits
+cat("Number of points above upper limit:", points_above_upper, "\n")
+cat("Number of points below lower limit:", points_below_lower, "\n")
